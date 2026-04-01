@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fake News Detector</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Google Fonts: Syne (display) + DM Sans (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ── Ambient background orbs ── -->
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+  <div class="bg-orb orb-3"></div>
+
+  <div class="page-wrapper">
+
+    <!-- ═══════════ HEADER ═══════════ -->
+    <header class="site-header">
+      <div class="logo">
+        <!-- Shield + magnifier icon (inline SVG) -->
+        <svg class="logo-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M24 4L6 12v14c0 10.5 7.7 20.3 18 22.6C35.3 46.3 42 36.5 42 26V12L24 4z" fill="url(#shieldGrad)" opacity="0.9"/>
+          <circle cx="21" cy="22" r="7" stroke="#fff" stroke-width="2.5" fill="none"/>
+          <line x1="26.2" y1="27.2" x2="33" y2="34" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="shieldGrad" x1="6" y1="4" x2="42" y2="48" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#e74c3c"/>
+              <stop offset="100%" stop-color="#c0392b"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="logo-text">TruthLens</span>
+      </div>
+      <nav class="header-meta">
+        <span class="badge-beta">BETA</span>
+        <span class="header-tagline">AI-Powered Misinformation Detector</span>
+      </nav>
+    </header>
+
+    <!-- ═══════════ HERO ═══════════ -->
+    <section class="hero">
+      <div class="hero-eyebrow">Powered by TF-IDF + Logistic Regression</div>
+      <h1 class="hero-title">
+        Can You Trust<br/>
+        <span class="highlight">What You Read?</span>
+      </h1>
+      <p class="hero-sub">Paste any news article or headline below and our ML model will analyse its credibility in seconds.</p>
+    </section>
+
+    <!-- ═══════════ MAIN CARD ═══════════ -->
+    <main class="detector-card">
+
+      <!-- ── Input area ── -->
+      <div class="input-section">
+        <label class="input-label" for="newsInput">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16"><path d="M3 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h10a1 1 0 100-2H3zm0 4a1 1 0 000 2h6a1 1 0 100-2H3z"/></svg>
+          News Article / Headline
+        </label>
+
+        <!-- ── URL input (bonus feature) ── -->
+        <div class="url-row">
+          <input type="url" id="urlInput" class="url-input" placeholder="Or paste a news URL to auto-fetch text…" />
+          <button id="fetchUrlBtn" class="btn btn-ghost btn-sm">Fetch</button>
+        </div>
+
+        <textarea
+          id="newsInput"
+          class="news-textarea"
+          placeholder="Paste a news article, headline, or any text you want to fact-check…"
+          spellcheck="false"
+          rows="8"
+        ></textarea>
+
+        <!-- Character counter -->
+        <div class="textarea-footer">
+          <span id="charCount" class="char-count">0 characters</span>
+          <span class="min-hint">Min. 20 characters for best accuracy</span>
+        </div>
+      </div>
+
+      <!-- ── Action buttons ── -->
+      <div class="action-row">
+        <button id="checkBtn" class="btn btn-primary">
+          <svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor" width="18"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15 3.293 9.879a1 1 0 011.414-1.414L8.414 12.172l6.879-6.879a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          Check News
+        </button>
+        <button id="clearBtn" class="btn btn-ghost">
+          <svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor" width="16"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+          Clear
+        </button>
+        <button id="historyBtn" class="btn btn-outline btn-sm" title="View history">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/></svg>
+          History <span id="historyCount" class="history-badge">0</span>
+        </button>
+      </div>
+
+      <!-- ── Error banner ── -->
+      <div id="errorBanner" class="error-banner hidden">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="18"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        <span id="errorText">Something went wrong.</span>
+      </div>
+
+      <!-- ── Loading spinner ── -->
+      <div id="loadingState" class="loading-state hidden">
+        <div class="spinner-ring"></div>
+        <p class="loading-text">Analysing article…</p>
+        <div class="loading-steps">
+          <span class="step active" id="step1">Preprocessing text</span>
+          <span class="step-arrow">→</span>
+          <span class="step" id="step2">TF-IDF vectorising</span>
+          <span class="step-arrow">→</span>
+          <span class="step" id="step3">Running model</span>
+        </div>
+      </div>
+
+      <!-- ── Result card ── -->
+      <div id="resultSection" class="result-section hidden">
+
+        <!-- Classification badge -->
+        <div class="result-header">
+          <div id="classificationBadge" class="classification-badge">
+            <span id="classIcon" class="class-icon"></span>
+            <span id="classLabel" class="class-label">—</span>
+          </div>
+          <div class="result-meta">
+            <span id="resultTimestamp" class="result-timestamp"></span>
+          </div>
+        </div>
+
+        <!-- Score gauge -->
+        <div class="score-section">
+          <div class="score-label-row">
+            <span class="score-title">Credibility Score</span>
+            <span id="scoreValue" class="score-value">—</span>
+          </div>
+          <div class="score-bar-track">
+            <div id="scoreBar" class="score-bar" style="width:0%"></div>
+            <div class="score-markers">
+              <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+            </div>
+          </div>
+          <div class="score-zones">
+            <span class="zone fake">Fake</span>
+            <span class="zone misleading">Misleading News</span>
+            <span class="zone real">Real</span>
+          </div>
+        </div>
+
+        <!-- Explanation -->
+        <div class="explanation-box">
+          <h4 class="explanation-title">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="16"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+            Analysis
+          </h4>
+          <p id="explanationText" class="explanation-text"></p>
+        </div>
+
+        <!-- Top keywords -->
+        <div class="keywords-box">
+          <h4 class="keywords-title">Key Indicators</h4>
+          <div id="keywordTags" class="keyword-tags"></div>
+        </div>
+
+      </div><!-- /.result-section -->
+
+    </main><!-- /.detector-card -->
+
+    <!-- ═══════════ HISTORY PANEL ═══════════ -->
+    <aside id="historyPanel" class="history-panel">
+      <div class="history-header">
+        <h3>Detection History</h3>
+        <button id="closeHistory" class="btn-icon-only" aria-label="Close history">✕</button>
+      </div>
+      <div id="historyList" class="history-list">
+        <p class="history-empty">No checks yet. Analyse an article to get started.</p>
+      </div>
+      <div class="history-actions">
+        <button id="clearHistoryBtn" class="btn btn-ghost btn-sm">Clear All</button>
+      </div>
+    </aside>
+
+    <!-- ═══════════ FOOTER ═══════════ -->
+    <footer class="site-footer">
+      <p>TruthLens uses a TF-IDF + Logistic Regression model trained on the ISOT Fake News dataset.</p>
+      <p class="footer-disclaimer">⚠ This tool is for educational purposes. Always verify information with multiple credible sources.</p>
+    </footer>
+
+  </div><!-- /.page-wrapper -->
+
+  <script src="script.js"></script>
+</body>
+</html>
