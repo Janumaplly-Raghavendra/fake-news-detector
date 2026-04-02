@@ -135,9 +135,6 @@ xdg-open frontend/index.html
 
 
 ---
-
-
-  "timestamp": "2024-0
 ## 🎯 Features
 
 | Feature | Description |
