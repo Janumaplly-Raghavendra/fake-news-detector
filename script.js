@@ -25,6 +25,9 @@ if (window.location.protocol === 'file:') {
 } else if (window.location.hostname.includes('github.dev')) {
   // If running in GitHub Codespaces, ensure API_BASE points to port 5000 regardless of the frontend port.
   API_BASE = window.location.origin.replace(/-\d+\.app\.github\.dev/, '-5000.app.github.dev');
+} else if (window.location.hostname.includes('github.io')) {
+  // If hosted on GitHub Pages, fallback to querying the local server 
+  API_BASE = 'http://127.0.0.1:5000';
 } else if (window.location.port !== '5000' && window.location.port !== '') {
   // Local development serving frontend on a different port -> connect to port 5000
   API_BASE = window.location.protocol + '//' + window.location.hostname + ':5000';
