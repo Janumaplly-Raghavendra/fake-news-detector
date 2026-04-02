@@ -133,74 +133,11 @@ start frontend/index.html
 xdg-open frontend/index.html
 ```
 
-Or serve it with Python's built-in server:
-```bash
-cd frontend
-python -m http.server 3000
-# Open: http://localhost:3000
-```
 
 ---
 
-## 🔌 API Reference
 
-### `POST /detect`
-Analyse a news article.
-
-**Request:**
-```json
-{ "text": "Your news article or headline here..." }
-```
-
-**Response:**
-```json
-{
-  "classification": "Real",
-  "score": 87,
-  "explanation": "The model assigned a high credibility score...",
-  "keywords": ["study", "confirmed", "according", "officials", "data"]
-}
-```
-
----
-
-### `POST /fetch-url`
-Extract article text from a URL (requires `requests` + `beautifulsoup4`).
-
-**Request:**
-```json
-{ "url": "https://www.bbc.com/news/example-article" }
-```
-
-**Response:**
-```json
-{ "text": "Extracted article text..." }
-```
-
----
-
-### `GET /health`
-Health check.
-
-```json
-{
-  "status": "ok",
-  "model_ready": true,
-  "history_count": 5,
-  "timestamp": "2024-01-15T10:30:00"
-}
-```
-
----
-
-### `GET /history`
-Get last N detections (default 20).
-
-### `DELETE /history`
-Clear server-side history.
-
----
-
+  "timestamp": "2024-0
 ## 🎯 Features
 
 | Feature | Description |
