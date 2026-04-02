@@ -16,7 +16,20 @@
 /* ─────────────────────────────────────────────
    Configuration
 ───────────────────────────────────────────── */
-const API_BASE   = 'http://127.0.0.1:5000';
+// Use window.location.origin if served from a server (like Codespaces or local Flask)
+// otherwise fallback to hardcoded localhost if opened as a local file.
+let API_BASE = window.location.origin;
+
+if (window.location.protocol === 'file:') {
+  API_BASE = 'http://127.0.0.1:5000';
+} else if (window.location.hostname.includes('github.dev')) {
+  // If running in GitHub Codespaces, ensure API_BASE points to port 5000 regardless of the frontend port.
+  API_BASE = window.location.origin.replace(/-\d+\.app\.github\.dev/, '-5000.app.github.dev');
+} else if (window.location.port !== '5000' && window.location.port !== '') {
+  // Local development serving frontend on a different port -> connect to port 5000
+  API_BASE = window.location.protocol + '//' + window.location.hostname + ':5000';
+}
+
 const DETECT_URL = `${API_BASE}/detect`;
 const FETCH_URL  = `${API_BASE}/fetch-url`;  // bonus endpoint
 
@@ -126,8 +139,8 @@ function formatTimestamp(date) {
 
 /** Classify a score into real / misleading / fake */
 function scoreToClass(score) {
-  if (score >= 50) return 'real';
-  if (score >= 25) return 'misleading';
+  if (score >= 70) return 'real';
+  if (score >= 55) return 'misleading';
   return 'fake';
 }
 
@@ -198,7 +211,7 @@ fetchUrlBtn.addEventListener('click', async () => {
       showError(data.error || 'Could not extract text from the URL.');
     }
   } catch (err) {
-    showError('Could not reach backend. Is the Flask server running on port 5000?');
+    showError(`Cannot connect to the backend. Make sure the Flask server is running on http://127.0.0.1:5000`);
   } finally {
     fetchUrlBtn.textContent = 'Fetch';
     fetchUrlBtn.disabled = false;
@@ -313,7 +326,7 @@ checkBtn.addEventListener('click', async () => {
     setLoading(false);
 
     if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-      showError('Cannot connect to the backend. Make sure the Flask server is running on http://127.0.0.1:5000');
+      showError(`Cannot connect to the backend. Make sure the Flask server is running on http://127.0.0.1:5000`);
     } else {
       showError(`Error: ${err.message}`);
     }

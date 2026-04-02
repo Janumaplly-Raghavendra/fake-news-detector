@@ -97,12 +97,15 @@ FAKE_SIGNALS = [
     'they don', 'mainstream media', 'deep state', 'wake up',
 ]
 
-# Phrases more common in reliable journalism
+# Phrases more common in reliable journalism and factual reporting
 REAL_SIGNALS = [
     'according to', 'officials said', 'statement', 'confirmed',
     'research shows', 'data shows', 'study finds', 'report says',
     'sources say', 'percent', 'analysis', 'evidence', 'published',
     'LIVE', 'warns', 'reported', 'updates', 'headline', 'breaking',
+    'qualifiers', 'qualified', 'failed to', 'consecutive', 'meanwhile',
+    'first time', 'years', 'announced', 'released', 'expected', 'results',
+    'scored', 'won', 'lost', 'match', 'game'
 ]
 
 
@@ -205,10 +208,24 @@ def predict_news(text: str) -> dict:
     # Convert to a 0-100 credibility score
     score = round(real_prob * 100)
 
+    # --- Heuristic Adjustments ---
+    # To improve robustness on out-of-domain neutral factual news (e.g., sports)
+    # we explicitly adjust the score based on our signal lists.
+    lower_text = text.lower()
+    fake_hits = [s for s in FAKE_SIGNALS if s in lower_text]
+    real_hits = [s for s in REAL_SIGNALS if s in lower_text]
+
+    if fake_hits:
+        score -= min(30, len(fake_hits) * 10)
+    if real_hits:
+        score += min(30, len(real_hits) * 10)
+        
+    score = max(0, min(100, score))
+
     # Classification thresholds
-    if score >= 50:
+    if score >= 70:
         classification = 'Real'
-    elif score >= 25:
+    elif score >= 55:
         classification = 'Misleading'
     else:
         classification = 'Fake'

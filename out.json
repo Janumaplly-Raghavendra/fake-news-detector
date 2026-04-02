@@ -1,0 +1,1 @@
+{"classification": "Fake", "score": 47, "explanation": "The model assigned a low credibility score of 47/100. The vocabulary patterns, phrase structures, and statistical features resemble articles labelled as false in the training dataset. Note: This is an automated ML prediction. Always cross-check with trusted news sources.", "keywords": ["world"]}
