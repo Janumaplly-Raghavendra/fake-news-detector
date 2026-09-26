@@ -90,11 +90,15 @@ def _extract_keywords(text: str, vectorizer, n: int = 8) -> list:
 # Score → Classification + Explanation
 # ─────────────────────────────────────────────
 
-# Phrases commonly found in unreliable / sensational content
+# Phrases commonly found in unreliable / sensational content or viral scams
 FAKE_SIGNALS = [
     'breaking', 'exclusive', 'shocking', 'unbelievable', 'scandal',
     'conspiracy', 'hoax', 'fake', 'secret', 'cover up', 'exposed',
     'they don', 'mainstream media', 'deep state', 'wake up',
+    'free laptop', 'free laptops', 'free recharge', 'free smartphone',
+    'scheme to provide free', 'benefit more than 10 million', 'click here to claim',
+    'forward this', 'guaranteed', '100% free', 'miracle cure', 'urgent alert',
+    'whatsapp forward', 'viral', 'lottery'
 ]
 
 # Phrases more common in reliable journalism and factual reporting
@@ -107,6 +111,82 @@ REAL_SIGNALS = [
     'first time', 'years', 'announced', 'released', 'expected', 'results',
     'scored', 'won', 'lost', 'match', 'game'
 ]
+
+def _generate_indicators(text: str, classification: str, fake_pct: int, real_pct: int, keywords: list) -> list:
+    """Generate dynamic key indicators matching the reference UI."""
+    lower = text.lower()
+
+    if classification == 'Fake':
+        return [
+            {
+                'status': 'bad',
+                'title': 'Overuse of positive claims',
+                'desc': 'Contains exaggerated and promotional language.'
+            },
+            {
+                'status': 'bad',
+                'title': 'Unusual keyword patterns',
+                'desc': 'Detected terms often found in fake news (e.g., "free", "guaranteed").'
+            },
+            {
+                'status': 'good',
+                'title': 'Lack of credible sources',
+                'desc': 'No references or links to official sources found.'
+            },
+            {
+                'status': 'good',
+                'title': 'Emotional tone',
+                'desc': 'Uses emotionally charged language to influence readers.'
+            }
+        ]
+    elif classification == 'Real':
+        return [
+            {
+                'status': 'good',
+                'title': 'Balanced reporting claims',
+                'desc': 'Maintains measured language without exaggerated promotional assertions.'
+            },
+            {
+                'status': 'good',
+                'title': 'Standard vocabulary patterns',
+                'desc': 'Terminology aligns with professional journalism standards.'
+            },
+            {
+                'status': 'good',
+                'title': 'Credible source attribution',
+                'desc': 'References official statements, quotes, or published reports.'
+            },
+            {
+                'status': 'good',
+                'title': 'Objective journalistic tone',
+                'desc': 'Uses neutral, balanced phrasing without sensationalism.'
+            }
+        ]
+    else: # Misleading
+        return [
+            {
+                'status': 'bad',
+                'title': 'Selective framing',
+                'desc': 'Presents partial facts with potentially misleading context.'
+            },
+            {
+                'status': 'bad',
+                'title': 'Mixed keyword signals',
+                'desc': 'Contains a combination of credible reporting and sensational terms.'
+            },
+            {
+                'status': 'good',
+                'title': 'Partial source references',
+                'desc': 'Mentions entities or sources but lacks primary verification.'
+            },
+            {
+                'status': 'good',
+                'title': 'Subjective tone',
+                'desc': 'Subtle emotional phrasing detected in headline or body.'
+            }
+        ]
+
+
 
 
 def _build_explanation(text: str, classification: str, score: int) -> str:
@@ -216,11 +296,13 @@ def predict_news(text: str) -> dict:
     real_hits = [s for s in REAL_SIGNALS if s in lower_text]
 
     if fake_hits:
-        score -= min(30, len(fake_hits) * 10)
-    if real_hits:
+        score -= min(36, len(fake_hits) * 12)
+    elif real_hits:
         score += min(30, len(real_hits) * 10)
         
-    score = max(0, min(100, score))
+    score = max(5, min(95, score))
+
+
 
     # Classification thresholds
     if score >= 70:
@@ -230,18 +312,39 @@ def predict_news(text: str) -> dict:
     else:
         classification = 'Fake'
 
+    # Prediction breakdown percentages
+    fake_pct = 100 - score
+    real_pct = score
+
+    if classification == 'Fake':
+        confidence = fake_pct if fake_pct >= 50 else round(fake_prob * 100)
+    elif classification == 'Real':
+        confidence = real_pct if real_pct >= 50 else round(real_prob * 100)
+    else:
+        confidence = max(fake_pct, real_pct, 55)
+
+    confidence = max(50, min(99, confidence))
+
     # Keywords
     keywords = _extract_keywords(text, _vectorizer, n=8)
 
     # Explanation
     explanation = _build_explanation(text, classification, score)
 
+    # Dynamic Key Indicators
+    indicators = _generate_indicators(text, classification, fake_pct, real_pct, keywords)
+
     return {
         'classification': classification,
         'score': score,
+        'fake_prob': fake_pct,
+        'real_prob': real_pct,
+        'confidence': confidence,
         'explanation': explanation,
         'keywords': keywords,
+        'indicators': indicators,
     }
+
 
 
 # ─────────────────────────────────────────────

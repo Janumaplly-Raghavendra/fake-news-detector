@@ -18,7 +18,7 @@ Run:
 import os
 import traceback
 from datetime import datetime
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 from model import predict_news
@@ -26,7 +26,9 @@ from model import predict_news
 # ─────────────────────────────────────────────
 # App Initialisation
 # ─────────────────────────────────────────────
-app = Flask(__name__)
+# BASE_DIR must be set before Flask() so static_folder gets the absolute path
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app = Flask(__name__, static_folder=BASE_DIR, static_url_path='')
 
 # Allow all origins during development so the plain HTML frontend can call us.
 # In production, restrict to your domain: CORS(app, origins=["https://yourdomain.com"])
@@ -236,13 +238,13 @@ def health():
 @app.route('/')
 def index():
     """Serve the main UI."""
-    return send_from_directory('.', 'index.html')
+    return app.send_static_file('index.html')
 
 
 @app.route('/<path:path>')
 def static_files(path):
-    """Serve other static assets."""
-    return send_from_directory('.', path)
+    """Serve other static assets (css, js, etc.)."""
+    return app.send_static_file(path)
 
 
 # ─────────────────────────────────────────────
