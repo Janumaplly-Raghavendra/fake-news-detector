@@ -32,6 +32,13 @@ from sklearn.metrics import (
     confusion_matrix,
 )
 
+import sys
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 # ─────────────────────────────────────────────
 # 1. File Paths
 # ─────────────────────────────────────────────
@@ -51,31 +58,70 @@ VECT_OUT   = os.path.join(BASE_DIR, 'vectorizer.pkl')
 
 
 # ─────────────────────────────────────────────
-# 2. Text Preprocessing
+# 2. Text Preprocessing & Publisher Leakage Scrubbing
 # ─────────────────────────────────────────────
-def preprocess(text: str) -> str:
+def clean_text(text: str) -> str:
     """
-    Lowercase → remove URLs → remove punctuation → remove digits → strip whitespace.
+    Robust text cleaning to prevent data leakage and false positives:
+    - Strips wire service prefixes (e.g. 'WASHINGTON (Reuters) - ')
+    - Removes publisher watermarks ('reuters', 'reuters.com', 'via twitter', etc.)
+    - Removes HTML tags, URLs, brackets and bracketed captions
+    - Removes punctuation and digits
+    - Normalizes whitespace and lowercases
     """
-    text = str(text).lower()
-    # Remove URLs
-    text = re.sub(r'https?://\S+|www\.\S+', '', text)
-    # Remove HTML tags
-    text = re.sub(r'<.*?>', '', text)
+    if not isinstance(text, str):
+        text = str(text) if text is not None else ''
+
+    # Strip wire service prefixes / datelines at the beginning of the text
+    # e.g., "WASHINGTON (Reuters) - ", "LONDON (Reuters) — ", "BEIJING (AP) - "
+    text = re.sub(r'^.*?\([A-Za-z\s]+\)\s*[-–—]\s*', '', text)
+
+    # Strip HTML tags
+    text = re.sub(r'<.*?>', ' ', text)
+
+    # Strip URLs
+    text = re.sub(r'https?://\S+|www\.\S+', ' ', text)
+
+    # Remove brackets and editorial captions inside brackets (e.g. [IMAGE], [Reuters], etc.)
+    text = re.sub(r'\[.*?\]', ' ', text)
+
+    # Convert to lowercase
+    text = text.lower()
+
+    # Remove all occurrences of publisher watermarks and wire references
+    watermarks = [
+        r'\breuters(?:\.com)?\b',
+        r'\bvia twitter\b',
+        r'\bfeatured image via\b',
+        r'\bgetty images\b',
+        r'\bassociated press\b',
+        r'\bap\b',
+        r'\bphoto by\b',
+        r'\bimage via\b',
+    ]
+    for wm in watermarks:
+        text = re.sub(wm, ' ', text)
+
     # Remove punctuation
-    text = text.translate(str.maketrans('', '', string.punctuation))
+    text = text.translate(str.maketrans(string.punctuation, ' ' * len(string.punctuation)))
+
     # Remove digits
-    text = re.sub(r'\d+', '', text)
-    # Collapse whitespace
+    text = re.sub(r'\d+', ' ', text)
+
+    # Collapse multiple whitespaces and strip
     text = re.sub(r'\s+', ' ', text).strip()
     return text
+
+
+# Backwards compatibility alias
+preprocess = clean_text
 
 
 # ─────────────────────────────────────────────
 # 3. Load & Merge Dataset
 # ─────────────────────────────────────────────
 def load_data() -> pd.DataFrame:
-    print("📂  Loading dataset…")
+    print("[*] Loading dataset...")
 
     if not os.path.exists(FAKE_PATH) or not os.path.exists(TRUE_PATH):
         raise FileNotFoundError(
@@ -88,20 +134,35 @@ def load_data() -> pd.DataFrame:
     fake_df = pd.read_csv(FAKE_PATH)
     true_df = pd.read_csv(TRUE_PATH)
 
+    print(f"    Raw counts: {len(fake_df):,} fake / {len(true_df):,} real")
+
+    # Clean text and title separately so start-of-text wire heads are cleanly removed
+    print("[*] Scrubbing publisher watermarks and wire headers from True articles...")
+    true_cleaned_titles = true_df['title'].fillna('').apply(clean_text)
+    true_cleaned_texts = true_df['text'].fillna('').apply(clean_text)
+    true_df['clean'] = (true_cleaned_titles + ' ' + true_cleaned_texts).str.strip()
+
+    print("[*] Scrubbing publisher watermarks from Fake articles...")
+    fake_cleaned_titles = fake_df['title'].fillna('').apply(clean_text)
+    fake_cleaned_texts = fake_df['text'].fillna('').apply(clean_text)
+    fake_df['clean'] = (fake_cleaned_titles + ' ' + fake_cleaned_texts).str.strip()
+
     # Assign labels:  Fake = 0,  Real = 1
     fake_df['label'] = 0
     true_df['label'] = 1
 
-    df = pd.concat([fake_df, true_df], ignore_index=True)
+    df = pd.concat([
+        fake_df[['clean', 'label']],
+        true_df[['clean', 'label']]
+    ], ignore_index=True)
 
-    # Combine title + text for richer features
-    df['combined'] = df['title'].fillna('') + ' ' + df['text'].fillna('')
+    # Drop any empty cleaned texts
+    df = df[df['clean'].str.len() > 10].copy()
 
     # Shuffle
     df = df.sample(frac=1, random_state=42).reset_index(drop=True)
 
-    print(f"  ✔ Loaded {len(df):,} articles  "
-          f"({fake_df.shape[0]:,} fake / {true_df.shape[0]:,} real)")
+    print(f"[+] Prepared {len(df):,} valid articles")
     return df
 
 
@@ -109,22 +170,17 @@ def load_data() -> pd.DataFrame:
 # 4. Feature Engineering
 # ─────────────────────────────────────────────
 def build_features(df: pd.DataFrame):
-    print("🔧  Preprocessing text…")
-    df['clean'] = df['combined'].apply(preprocess)
-    print("  ✔ Text preprocessing complete")
-
-    print("📐  Fitting TF-IDF vectoriser…")
+    print("[*] Fitting TF-IDF vectorizer (tuned pipeline)...")
     vectorizer = TfidfVectorizer(
-        max_features=50_000,   # vocabulary size
-        ngram_range=(1, 2),    # unigrams + bigrams
-        sublinear_tf=True,     # log-scale TF
-        min_df=2,              # ignore very rare terms
-        max_df=0.95,           # ignore near-universal terms
+        max_features=20000,
+        ngram_range=(1, 2),
+        sublinear_tf=True,
+        min_df=3,
         stop_words='english',
     )
     X = vectorizer.fit_transform(df['clean'])
     y = df['label'].values
-    print(f"  ✔ Feature matrix: {X.shape[0]:,} samples × {X.shape[1]:,} features")
+    print(f"[+] Feature matrix: {X.shape[0]:,} samples x {X.shape[1]:,} features")
     return X, y, vectorizer
 
 
@@ -132,26 +188,32 @@ def build_features(df: pd.DataFrame):
 # 5. Train
 # ─────────────────────────────────────────────
 def train(X, y):
-    print("✂️   Splitting into train / test (80/20)…")
+    print("[*] Splitting into train / test (80/20)...")
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.20, random_state=42, stratify=y
     )
-    print(f"  ✔ Train: {X_train.shape[0]:,}  |  Test: {X_test.shape[0]:,}")
+    print(f"[+] Train: {X_train.shape[0]:,}  |  Test: {X_test.shape[0]:,}")
 
-    print("🧠  Training Logistic Regression…")
+    print("[*] Training Logistic Regression (balanced, C=1.0, fit_intercept=False)...")
     model = LogisticRegression(
+        C=1.0,
         max_iter=1000,
-        C=1.0,           # regularisation
+        class_weight='balanced',
+        fit_intercept=False,
         solver='lbfgs',
-        n_jobs=-1,
+        random_state=42,
     )
     model.fit(X_train, y_train)
-    print("  ✔ Training complete")
+    print("[+] Training complete")
+
+    # Verify class indexing
+    print(f"[+] Model classes: {model.classes_} (0=Fake, 1=Real)")
+    assert list(model.classes_) == [0, 1], f"Unexpected model.classes_: {model.classes_}"
 
     # ── Evaluation ──
     y_pred = model.predict(X_test)
     acc = accuracy_score(y_test, y_pred)
-    print(f"\n📊  Test Accuracy : {acc * 100:.2f}%")
+    print(f"\n[+] Test Accuracy : {acc * 100:.2f}%")
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred, target_names=['Fake', 'Real']))
     print("Confusion Matrix:")
@@ -165,13 +227,13 @@ def train(X, y):
 # 6. Save
 # ─────────────────────────────────────────────
 def save_artifacts(model, vectorizer):
-    print("\n💾  Saving model and vectoriser…")
+    print("\n[*] Saving model and vectorizer...")
     with open(MODEL_OUT, 'wb') as f:
         pickle.dump(model, f)
     with open(VECT_OUT, 'wb') as f:
         pickle.dump(vectorizer, f)
-    print(f"  ✔ model.pkl     → {MODEL_OUT}")
-    print(f"  ✔ vectorizer.pkl→ {VECT_OUT}")
+    print(f"[+] model.pkl     -> {MODEL_OUT}")
+    print(f"[+] vectorizer.pkl-> {VECT_OUT}")
 
 
 # ─────────────────────────────────────────────
@@ -179,7 +241,7 @@ def save_artifacts(model, vectorizer):
 # ─────────────────────────────────────────────
 if __name__ == '__main__':
     print("=" * 52)
-    print("  TruthLens  ·  Model Training Script")
+    print("  TruthLens - Model Training Script")
     print("=" * 52)
 
     df = load_data()
@@ -187,5 +249,6 @@ if __name__ == '__main__':
     model = train(X, y)
     save_artifacts(model, vectorizer)
 
-    print("\n✅  Done! Backend is ready to serve predictions.")
-    print("   Run:  python app.py")
+    print("\n[+] Done! Backend is ready to serve predictions.")
+    print("    Run:  python app.py")
+

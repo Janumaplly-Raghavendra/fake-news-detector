@@ -84,6 +84,26 @@ const realPct      = document.getElementById('realPct');
 const textLenVal   = document.getElementById('textLenVal');
 const indicatorsList = document.getElementById('indicatorsList');
 
+// Result Area Controls & Resizer
+const resultScrollContainer = document.getElementById('resultScrollContainer');
+const btnScrollTop          = document.getElementById('btnScrollTop');
+const btnScrollBottom       = document.getElementById('btnScrollBottom');
+const btnAreaDec            = document.getElementById('btnAreaDec');
+const btnAreaInc            = document.getElementById('btnAreaInc');
+const btnAreaWide           = document.getElementById('btnAreaWide');
+const resultResizer         = document.getElementById('resultResizer');
+const rightCol              = document.querySelector('.right-col');
+
+// Detailed Reasoning Elements
+const reasoningBox      = document.getElementById('reasoningBox');
+const reasoningBadge    = document.getElementById('reasoningBadge');
+const reasoningSubtitle = document.getElementById('reasoningSubtitle');
+const reasoningDesc     = document.getElementById('reasoningDesc');
+const reasonsList       = document.getElementById('reasonsList');
+
+// Theme Toggle
+const themeToggleBtn    = document.getElementById('themeToggleBtn');
+
 // Recent Analyses Panel
 const recentPanel = document.getElementById('recentPanel');
 const recentList  = document.getElementById('recentList');
@@ -102,6 +122,13 @@ let recentAnalyses = [];
 /* ─────────────────────────────────────────────
    Helpers & UI Utilities
 ───────────────────────────────────────────── */
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 function showError(msg) {
   if (!errorBanner || !errorText) return;
   errorText.textContent = msg;
@@ -395,29 +422,77 @@ function renderAnalysisResult(data, text) {
     textLenVal.textContent = `${text.length} characters`;
   }
 
+  // Reasoning Box: Why this news is True, False, or Misleading
+  if (reasoningBox && reasoningBadge && reasoningSubtitle && reasoningDesc && reasonsList) {
+    reasoningBox.className = 'reasoning-box';
+    let themeClass = 'fake-theme';
+    let badgeText = 'FALSEHOOD INDICATORS (FALSE)';
+    let subtitleText = 'Why this article is likely False';
+    let bulletIconClass = 'fake-icon';
+    let bulletSymbol = '✗';
+
+    if (classification === 'Real') {
+      themeClass = 'real-theme';
+      badgeText = 'AUTHENTICITY SIGNALS (TRUE)';
+      subtitleText = 'Why this article is likely True';
+      bulletIconClass = 'real-icon';
+      bulletSymbol = '✓';
+    } else if (classification === 'Misleading') {
+      themeClass = 'misleading-theme';
+      badgeText = 'POTENTIALLY MISLEADING / MIXED';
+      subtitleText = 'Why this article is potentially Misleading';
+      bulletIconClass = 'misleading-icon';
+      bulletSymbol = '⚠';
+    }
+
+    reasoningBox.classList.add(themeClass);
+    reasoningBadge.textContent = badgeText;
+    reasoningSubtitle.textContent = subtitleText;
+    reasoningDesc.textContent = data.detailed_reasoning || data.explanation || 'Detailed verification analysis of linguistic patterns, attribution signals, and vocabulary distribution.';
+
+    reasonsList.innerHTML = '';
+    const reasons = (data.reasons && data.reasons.length > 0) ? data.reasons : [
+      classification === 'Real'
+        ? 'Objective journalistic phrasing and verifiable attribution consistent with authentic reporting.'
+        : (classification === 'Misleading'
+            ? 'Borderline confidence score with contradictory stylistic and attribution signals.'
+            : 'Sensationalism, absence of verifiable institutional attribution, or unverified claims detected.')
+    ];
+
+    reasons.forEach(reason => {
+      const item = document.createElement('div');
+      item.className = 'reason-item';
+      item.innerHTML = `
+        <span class="reason-bullet-icon ${bulletIconClass}">${bulletSymbol}</span>
+        <span class="reason-text">${escapeHtml(reason)}</span>
+      `;
+      reasonsList.appendChild(item);
+    });
+  }
+
   // Key Indicators List
   if (indicatorsList) {
     indicatorsList.innerHTML = '';
     const indicators = data.indicators || [
       {
         status: classification === 'Fake' ? 'bad' : 'good',
-        title: classification === 'Fake' ? 'Overuse of positive claims' : 'Balanced reporting claims',
-        desc: classification === 'Fake' ? 'Contains exaggerated and promotional language.' : 'Maintains measured factual statements.'
-      },
-      {
-        status: classification === 'Fake' ? 'bad' : 'good',
         title: classification === 'Fake' ? 'Unusual keyword patterns' : 'Standard vocabulary patterns',
-        desc: classification === 'Fake' ? 'Detected terms often found in fake news (e.g., "free", "guaranteed").' : 'Terminology aligns with professional journalism.'
+        desc: classification === 'Fake' ? 'Detected vocabulary and patterns typical of unverified reporting.' : 'Maintains measured factual statements and journalistic vocabulary.'
       },
       {
         status: classification === 'Fake' ? 'bad' : 'good',
-        title: classification === 'Fake' ? 'Lack of credible sources' : 'Credible source attribution',
-        desc: classification === 'Fake' ? 'No references or links to official sources found.' : 'References official statements or recognized verifiable sources.'
+        title: classification === 'Fake' ? 'Source attribution presence' : 'Credible source attribution',
+        desc: classification === 'Fake' ? 'No references to verifiable studies or official sources found.' : 'References official statements or recognized verifiable sources.'
       },
       {
         status: classification === 'Fake' ? 'bad' : 'good',
-        title: classification === 'Fake' ? 'Emotional tone' : 'Objective journalistic tone',
-        desc: classification === 'Fake' ? 'Uses emotionally charged language to influence readers.' : 'Maintains neutral and balanced language without sensationalism.'
+        title: classification === 'Fake' ? 'Sensational / alarmist language' : 'Objective journalistic tone',
+        desc: classification === 'Fake' ? 'Contains emotionally charged or sensationalist language.' : 'Maintains neutral and balanced language without sensationalism.'
+      },
+      {
+        status: classification === 'Fake' ? 'bad' : 'good',
+        title: classification === 'Fake' ? 'Informal formatting & style' : 'Balanced reporting style',
+        desc: classification === 'Fake' ? 'Contains formatting anomalies or dramatic emphasis.' : 'Follows standard journalistic grammar and structure.'
       }
     ];
 
@@ -439,6 +514,11 @@ function renderAnalysisResult(data, text) {
   if (resultPanel) resultPanel.classList.remove('hidden');
   if (statsPanel)  statsPanel.classList.add('hidden');
   if (recentPanel) recentPanel.classList.add('hidden');
+
+  // Reset scroll position to top of results container for clear view
+  if (resultScrollContainer) {
+    resultScrollContainer.scrollTop = 0;
+  }
 
 
   // Add to Recent Analyses
@@ -655,6 +735,126 @@ if (newsInput) {
   newsInput.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       if (checkBtn) checkBtn.click();
+    }
+  });
+}
+
+/* ─────────────────────────────────────────────
+   Dark / Light Mode Theme Controller
+───────────────────────────────────────────── */
+const MOON_ICON_SVG = `<svg viewBox="0 0 20 20" fill="currentColor" width="15"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>`;
+const SUN_ICON_SVG  = `<svg viewBox="0 0 20 20" fill="currentColor" width="16"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>`;
+
+function setTheme(theme) {
+  const isLight = theme === 'light';
+  if (isLight) {
+    document.body.classList.add('light-theme');
+    if (themeToggleBtn) {
+      themeToggleBtn.innerHTML = SUN_ICON_SVG;
+      themeToggleBtn.setAttribute('title', 'Switch to Dark Mode');
+      themeToggleBtn.setAttribute('aria-label', 'Switch to Dark Mode');
+    }
+    localStorage.setItem('truthlens_theme', 'light');
+  } else {
+    document.body.classList.remove('light-theme');
+    if (themeToggleBtn) {
+      themeToggleBtn.innerHTML = MOON_ICON_SVG;
+      themeToggleBtn.setAttribute('title', 'Switch to Light Mode');
+      themeToggleBtn.setAttribute('aria-label', 'Switch to Light Mode');
+    }
+    localStorage.setItem('truthlens_theme', 'dark');
+  }
+}
+
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener('click', () => {
+    const isCurrentlyLight = document.body.classList.contains('light-theme');
+    setTheme(isCurrentlyLight ? 'dark' : 'light');
+  });
+}
+
+// Restore saved theme on startup
+const savedTheme = localStorage.getItem('truthlens_theme');
+if (savedTheme === 'light') {
+  setTheme('light');
+} else {
+  setTheme('dark');
+}
+
+/* ─────────────────────────────────────────────
+   Result Section Area Controls & Scrolling
+───────────────────────────────────────────── */
+// 1. Scroll Up to Top
+if (btnScrollTop && resultScrollContainer) {
+  btnScrollTop.addEventListener('click', () => {
+    resultScrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+// 2. Scroll Down to Bottom
+if (btnScrollBottom && resultScrollContainer) {
+  btnScrollBottom.addEventListener('click', () => {
+    resultScrollContainer.scrollTo({ top: resultScrollContainer.scrollHeight, behavior: 'smooth' });
+  });
+}
+
+// 3. Increase Result Area Height (+)
+if (btnAreaInc && resultScrollContainer) {
+  btnAreaInc.addEventListener('click', () => {
+    const currentH = resultScrollContainer.offsetHeight;
+    const targetH = Math.min(1000, currentH + 140);
+    resultScrollContainer.style.maxHeight = `${targetH}px`;
+    resultScrollContainer.style.height = `${targetH}px`;
+  });
+}
+
+// 4. Decrease Result Area Height (−)
+if (btnAreaDec && resultScrollContainer) {
+  btnAreaDec.addEventListener('click', () => {
+    const currentH = resultScrollContainer.offsetHeight;
+    const targetH = Math.max(260, currentH - 140);
+    resultScrollContainer.style.maxHeight = `${targetH}px`;
+    resultScrollContainer.style.height = `${targetH}px`;
+  });
+}
+
+// 5. Toggle Wide View (⛶)
+if (btnAreaWide && rightCol) {
+  btnAreaWide.addEventListener('click', () => {
+    const isWide = rightCol.classList.toggle('is-wide');
+    btnAreaWide.classList.toggle('active', isWide);
+    btnAreaWide.setAttribute('title', isWide ? 'Reset Standard Width' : 'Toggle Wide View');
+  });
+}
+
+// 6. Draggable Resizer Handle (Drag up/down to increase/decrease area)
+if (resultResizer && resultScrollContainer) {
+  let isResizing = false;
+  let startY = 0;
+  let startH = 0;
+
+  resultResizer.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    startY = e.clientY;
+    startH = resultScrollContainer.offsetHeight;
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+    const deltaY = e.clientY - startY;
+    const newH = Math.min(1100, Math.max(220, startH + deltaY));
+    resultScrollContainer.style.maxHeight = `${newH}px`;
+    resultScrollContainer.style.height = `${newH}px`;
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (isResizing) {
+      isResizing = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
     }
   });
 }

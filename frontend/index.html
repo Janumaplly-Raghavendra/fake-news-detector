@@ -393,73 +393,96 @@
               <svg viewBox="0 0 20 20" fill="currentColor" width="15"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
               Analysis Result
             </div>
-            <div class="result-meta-hdr">
-              <div class="res-ts" id="resultTs"></div>
-              <span class="rp-sub">Temporary (This session)</span>
+            
+            <!-- Result Area Controls (Increase/Decrease & Scroll Up/Down) -->
+            <div class="result-area-controls">
+              <button class="area-btn" id="btnScrollTop" title="Scroll to Top">↑</button>
+              <button class="area-btn" id="btnScrollBottom" title="Scroll to Bottom">↓</button>
+              <div class="area-divider"></div>
+              <button class="area-btn" id="btnAreaDec" title="Decrease Area / Compact View">−</button>
+              <button class="area-btn" id="btnAreaInc" title="Increase Area / Expand Height">+</button>
+              <button class="area-btn" id="btnAreaWide" title="Toggle Wide View">⛶</button>
             </div>
           </div>
 
-          <!-- Verdict -->
-          <div class="verdict-card" id="verdictCard">
-            <div class="verdict-left">
-              <div class="verdict-icon" id="verdictIcon">❗</div>
-              <div>
-                <div class="verdict-label" id="verdictLabel">LIKELY FAKE</div>
-                <div class="verdict-desc" id="verdictDesc">This article shows signs of being misleading or false.</div>
-              </div>
-            </div>
-            <div class="conf-ring-wrap">
-              <svg viewBox="0 0 80 80" width="80" height="80" class="conf-svg">
-                <circle cx="40" cy="40" r="30" fill="none" stroke="#1e2a4a" stroke-width="8"/>
-                <circle cx="40" cy="40" r="30" fill="none" id="confArc"
-                  stroke="#ef4444" stroke-width="8"
-                  stroke-dasharray="188.5"
-                  stroke-dashoffset="188.5"
-                  stroke-linecap="round"
-                  transform="rotate(-90 40 40)"/>
-              </svg>
-              <div class="conf-inner">
-                <span class="conf-pct" id="confValue">0%</span>
-                <span class="conf-lbl">Confidence</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Breakdown -->
-          <div class="breakdown">
-            <h4 class="section-ttl">Prediction Breakdown</h4>
-            <div class="bar-row">
-              <div class="bar-name"><span class="dot red-dot"></span> Fake</div>
-              <div class="bar-track"><div class="bar-fill red-fill" id="fakeBar" style="width:0%"></div></div>
-              <span class="bar-pct" id="fakePct">0%</span>
-            </div>
-            <div class="bar-row">
-              <div class="bar-name"><span class="dot green-dot"></span> Real</div>
-              <div class="bar-track"><div class="bar-fill green-fill" id="realBar" style="width:0%"></div></div>
-              <span class="bar-pct" id="realPct">0%</span>
-            </div>
-            <div class="meta-tiles">
-              <div class="meta-tile">
-                <svg viewBox="0 0 20 20" fill="currentColor" width="13" class="meta-icon"><path d="M13 7H7v6h6V7z"/><path fill-rule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 110-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clip-rule="evenodd"/></svg>
+          <div class="result-scroll-container" id="resultScrollContainer">
+            <!-- Verdict -->
+            <div class="verdict-card" id="verdictCard">
+              <div class="verdict-left">
+                <div class="verdict-icon" id="verdictIcon">❗</div>
                 <div>
-                  <div class="meta-lbl">Model Used</div>
-                  <div class="meta-val">TF-IDF + Logistic Regression</div>
+                  <div class="verdict-label" id="verdictLabel">LIKELY FAKE</div>
+                  <div class="verdict-desc" id="verdictDesc">This article shows signs of being misleading or false.</div>
                 </div>
               </div>
-              <div class="meta-tile">
-                <svg viewBox="0 0 20 20" fill="currentColor" width="13" class="meta-icon"><path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clip-rule="evenodd"/></svg>
-                <div>
-                  <div class="meta-lbl">Text Length</div>
-                  <div class="meta-val" id="textLenVal">—</div>
+              <div class="conf-ring-wrap">
+                <svg viewBox="0 0 80 80" width="80" height="80" class="conf-svg">
+                  <circle cx="40" cy="40" r="30" fill="none" stroke="#1e2a4a" stroke-width="8"/>
+                  <circle cx="40" cy="40" r="30" fill="none" id="confArc"
+                    stroke="#ef4444" stroke-width="8"
+                    stroke-dasharray="188.5"
+                    stroke-dashoffset="188.5"
+                    stroke-linecap="round"
+                    transform="rotate(-90 40 40)"/>
+                </svg>
+                <div class="conf-inner">
+                  <span class="conf-pct" id="confValue">0%</span>
+                  <span class="conf-lbl">Confidence</span>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Key Indicators -->
-          <div class="indicators">
-            <h4 class="section-ttl">🔑 Key Indicators</h4>
-            <div class="indicators-list" id="indicatorsList"></div>
+            <!-- Breakdown -->
+            <div class="breakdown">
+              <h4 class="section-ttl">Prediction Breakdown</h4>
+              <div class="bar-row">
+                <div class="bar-name"><span class="dot red-dot"></span> Fake</div>
+                <div class="bar-track"><div class="bar-fill red-fill" id="fakeBar" style="width:0%"></div></div>
+                <span class="bar-pct" id="fakePct">0%</span>
+              </div>
+              <div class="bar-row">
+                <div class="bar-name"><span class="dot green-dot"></span> Real</div>
+                <div class="bar-track"><div class="bar-fill green-fill" id="realBar" style="width:0%"></div></div>
+                <span class="bar-pct" id="realPct">0%</span>
+              </div>
+              <div class="meta-tiles">
+                <div class="meta-tile">
+                  <svg viewBox="0 0 20 20" fill="currentColor" width="13" class="meta-icon"><path d="M13 7H7v6h6V7z"/><path fill-rule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 110-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clip-rule="evenodd"/></svg>
+                  <div>
+                    <div class="meta-lbl">Model Used</div>
+                    <div class="meta-val">TF-IDF + Logistic Regression</div>
+                  </div>
+                </div>
+                <div class="meta-tile">
+                  <svg viewBox="0 0 20 20" fill="currentColor" width="13" class="meta-icon"><path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clip-rule="evenodd"/></svg>
+                  <div>
+                    <div class="meta-lbl">Text Length</div>
+                    <div class="meta-val" id="textLenVal">—</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Detailed Reasoning: Why this is True, False, or Misleading -->
+            <div class="reasoning-box" id="reasoningBox">
+              <div class="reasoning-hdr">
+                <span class="reasoning-badge" id="reasoningBadge">VERDICT REASONS</span>
+                <span class="reasoning-subtitle" id="reasoningSubtitle">Analysis Rationale</span>
+              </div>
+              <p class="reasoning-desc" id="reasoningDesc">The model evaluated linguistic patterns, attribution signals, and vocabulary distribution.</p>
+              <div class="reasons-list" id="reasonsList"></div>
+            </div>
+
+            <!-- Key Indicators -->
+            <div class="indicators">
+              <h4 class="section-ttl">🔑 Key Indicators</h4>
+              <div class="indicators-list" id="indicatorsList"></div>
+            </div>
+          </div><!-- /.result-scroll-container -->
+
+          <!-- Draggable bottom handle to increase/decrease area -->
+          <div class="result-resizer" id="resultResizer" title="Drag up or down to resize result area">
+            <span class="resizer-pill"></span>
           </div>
         </div>
 
