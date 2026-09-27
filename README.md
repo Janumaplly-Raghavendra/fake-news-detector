@@ -1,4 +1,4 @@
-# 🔍 TruthLens — Fake News & Misinformation Detector
+# 🔍 Fake News & Misinformation Detector
 
 A complete full-stack misinformation detection system powered by **TF-IDF + Logistic Regression**.
 
