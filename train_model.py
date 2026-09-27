@@ -35,8 +35,13 @@ from sklearn.metrics import (
 # ─────────────────────────────────────────────
 # 1. File Paths
 # ─────────────────────────────────────────────
-BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
-DATASET_DIR = os.path.join(BASE_DIR, '..', 'dataset')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Check ./dataset first, then fallback to ../dataset
+if os.path.isdir(os.path.join(BASE_DIR, 'dataset')):
+    DATASET_DIR = os.path.join(BASE_DIR, 'dataset')
+else:
+    DATASET_DIR = os.path.join(BASE_DIR, '..', 'dataset')
 
 FAKE_PATH  = os.path.join(DATASET_DIR, 'Fake.csv')
 TRUE_PATH  = os.path.join(DATASET_DIR, 'True.csv')
