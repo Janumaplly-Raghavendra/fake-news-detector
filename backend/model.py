@@ -19,11 +19,12 @@ import numpy as np
 from typing import Optional
 
 # ─────────────────────────────────────────────
-# Paths (model files live alongside this script)
+# Paths (model files live in the project-root /models/ directory)
 # ─────────────────────────────────────────────
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, 'model.pkl')
-VECT_PATH  = os.path.join(BASE_DIR, 'vectorizer.pkl')
+MODELS_DIR = os.path.join(BASE_DIR, '..', 'models')
+MODEL_PATH = os.path.join(MODELS_DIR, 'model.pkl')
+VECT_PATH  = os.path.join(MODELS_DIR, 'vectorizer.pkl')
 
 # ─────────────────────────────────────────────
 # Lazy-loaded globals (loaded once on first use)

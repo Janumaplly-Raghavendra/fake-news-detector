@@ -27,8 +27,9 @@ from model import predict_news
 # App Initialisation
 # ─────────────────────────────────────────────
 # BASE_DIR must be set before Flask() so static_folder gets the absolute path
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-app = Flask(__name__, static_folder=BASE_DIR, static_url_path='')
+BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_DIR = os.path.join(BASE_DIR, '..', 'frontend')
+app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 
 # Allow all origins during development so the plain HTML frontend can call us.
 # In production, restrict to your domain: CORS(app, origins=["https://yourdomain.com"])
@@ -220,9 +221,10 @@ def clear_history():
 def health():
     """Quick server health check."""
     import os
+    models_dir = os.path.join(os.path.dirname(__file__), '..', 'models')
     model_ready = (
-        os.path.exists(os.path.join(os.path.dirname(__file__), 'model.pkl')) and
-        os.path.exists(os.path.join(os.path.dirname(__file__), 'vectorizer.pkl'))
+        os.path.exists(os.path.join(models_dir, 'model.pkl')) and
+        os.path.exists(os.path.join(models_dir, 'vectorizer.pkl'))
     )
     return jsonify({
         'status': 'ok',
